@@ -1,3 +1,47 @@
+// === VALIDATION
+interface Validatable {
+	value: number | string;
+	required: boolean;
+	minLength?: number;
+	maxLength?: number;
+	min?: number;
+	max?: number;
+}
+
+const validate = ({
+	value,
+	required,
+	minLength,
+	maxLength,
+	min,
+	max
+}: Validatable) => {
+	let isValid = true;
+
+	if (required) {
+		isValid &&= value.toString().trim().length !== 0;
+	}
+
+	if (minLength != null && typeof value === 'string') {
+		isValid &&= value.length >= minLength;
+	}
+
+	if (maxLength != null && typeof value === 'string') {
+		isValid &&= value.length <= maxLength;
+	}
+
+	if (min != null && typeof value === 'number') {
+		isValid &&= value >= min;
+	}
+
+	if (max != null && typeof value === 'number') {
+		isValid &&= value <= max;
+	}
+
+	return isValid;
+}
+// ===
+
 // === AUTOBIND decoratar
 const autobind = (
 	target : any,
@@ -15,8 +59,7 @@ const autobind = (
 		return adjDescriptor;
 	}
 
-// ====
-
+ 
 class ProjectInput {
 	// DOM elements
 	public templateElement: HTMLTemplateElement;
@@ -52,10 +95,29 @@ class ProjectInput {
 		const description = this.descriptionInputElement.value;
 		const people = this.peopleInputElement.value;
 
+		const titleValidationSchema: Validatable = {
+			value: title,
+			required: true,
+			minLength: 5
+		};
+
+		const descriptionValidationSchema: Validatable = {
+			value: description,
+			required: true,
+			minLength: 5
+		};
+
+		const peopleValidationSchema: Validatable = {
+			value: people,
+			required: true,
+			min: 1,
+			max: 10
+		}
+
 		if (
-			!title.trim().length ||
-			!description.trim().length ||
-			!people.trim().length
+			!validate(titleValidationSchema) ||
+			!validate(descriptionValidationSchema) ||
+			!validate(peopleValidationSchema) 
 		) {
 			alert("Invalid data!. Try again!");
 			return;
