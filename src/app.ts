@@ -47,11 +47,36 @@ class ProjectInput {
 		this.hostElement.insertAdjacentElement('afterbegin', this.element);
 	}
 
+	private gatherUserInput(): [string, string, number] | void {
+		const title = this.titleInputElement.value;
+		const description = this.descriptionInputElement.value;
+		const people = this.peopleInputElement.value;
+
+		if (
+			!title.trim().length ||
+			!description.trim().length ||
+			!people.trim().length
+		) {
+			alert("Invalid data!. Try again!");
+			return;
+		}
+		return [ title,  description, +people ];
+	}
+
+	private clearInputs() {
+		this.titleInputElement.value = '';
+		this.descriptionInputElement.value = '';
+		this.peopleInputElement.value = '';
+	}
+
 	@autobind
 	private submitHandler(event: Event) {
 		event.preventDefault();
-
-		console.log(this.titleInputElement.value);
+		const userInput = this.gatherUserInput();
+		if (Array.isArray(userInput)) {
+			console.log(userInput);
+			this.clearInputs();			
+		}
 	};
 
 	private configure() {

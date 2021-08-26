@@ -32,9 +32,30 @@ class ProjectInput {
     attach() {
         this.hostElement.insertAdjacentElement('afterbegin', this.element);
     }
+    gatherUserInput() {
+        const title = this.titleInputElement.value;
+        const description = this.descriptionInputElement.value;
+        const people = this.peopleInputElement.value;
+        if (!title.trim().length ||
+            !description.trim().length ||
+            !people.trim().length) {
+            alert("Invalid data!. Try again!");
+            return;
+        }
+        return [title, description, +people];
+    }
+    clearInputs() {
+        this.titleInputElement.value = '';
+        this.descriptionInputElement.value = '';
+        this.peopleInputElement.value = '';
+    }
     submitHandler(event) {
         event.preventDefault();
-        console.log(this.titleInputElement.value);
+        const userInput = this.gatherUserInput();
+        if (Array.isArray(userInput)) {
+            console.log(userInput);
+            this.clearInputs();
+        }
     }
     ;
     configure() {

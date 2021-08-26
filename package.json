@@ -1,6 +1,6 @@
 {
   "name": "understanding-typescript",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Understanding TypeScript Course Setup",
   "main": "app.js",
   "scripts": {
