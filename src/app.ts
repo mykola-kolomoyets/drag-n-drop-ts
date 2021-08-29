@@ -6,6 +6,37 @@ enum ProjectStatus {
 
 type Listener<T> = (items: T[]) => void;
 
+// & === DECORATORS
+// use decorators ONLY while using function() instead () => {}
+const autobind = (
+	_ : any,
+	_2: string,
+	descriptor: PropertyDescriptor
+	) => {
+		const originalMethod = descriptor.value;
+		const adjDescriptor: PropertyDescriptor = {
+			configurable: true,
+			get() {
+				const boundFunction = originalMethod.bind(this);
+				return boundFunction;
+			}
+		};
+		return adjDescriptor;
+	}
+
+// & === DRAG-N-DROP
+
+interface Draggable {
+	dragStartHandler: (event: DragEvent) => void;
+	dragEndHandler: (event: DragEvent) => void;
+}
+
+interface DragTarget {
+	dragOverHandler: (event: DragEvent) => void;
+	dragLeaveHandler: (event: DragEvent) => void;
+	dropHandler: (event: DragEvent) => void;
+}
+
 // & === CUSTOM CLASSES
 class Project {
 	constructor(
@@ -48,7 +79,9 @@ abstract class Component<T extends HTMLElement, U extends HTMLElement> {
 	abstract renderContent(): void;
 }
 
-class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
+class ProjectItem 
+	extends Component<HTMLUListElement, HTMLLIElement> 
+	implements Draggable {
 	constructor(
 		hostId: string,
 		private project: Project
@@ -58,12 +91,33 @@ class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
 		this.renderContent();
 	}
 
-	configure() {}
+	// use decorators ONLY while using function() instead () => {}
+	// @autobind
+	dragStartHandler = (event: DragEvent) => {
+		event.dataTransfer!.setData('text/plain', this.project.id);
+		event.dataTransfer!.effectAllowed = 'move';
+	}
+
+	// use decorators ONLY while using function() instead () => {}
+	// @autobind
+	dragEndHandler = (event: DragEvent) => {
+		console.log('drag end');
+	}
+
+	get persons() {
+		const { people } = this.project;
+		return `${people} ${people === 1 ? 'person' : 'persons'} assigned`;
+	}
+
+	configure() {
+		this.element.addEventListener('dragstart', this.dragStartHandler);
+		this.element.addEventListener('dragend', this.dragEndHandler);
+	}
 
 	renderContent() {
 		const { title, description, people } = this.project;
 		this.element.querySelector('h2')!.textContent = title;
-		this.element.querySelector('h3')!.textContent = people.toString();
+		this.element.querySelector('h3')!.textContent = this.persons;
 		this.element.querySelector('p')!.textContent = description;
 	}
 }
@@ -104,6 +158,18 @@ class ProjectState extends State<Project>{
 			ProjectStatus.ACTIVE
 		);
 		this.projects.push(newProject);
+		this.updateListeners();
+	}
+
+	public moveProject(projectId: string, status: ProjectStatus) {
+		const project = this.projects.find(project => project.id === projectId);
+		if (project && project.status !== status) {
+			project.status = status;
+			this.updateListeners();
+		}
+	}
+
+	private updateListeners() {
 		this.listeners.forEach(listener => listener(this.projects.slice()));
 	}
 
@@ -154,23 +220,6 @@ const validate = ({
 	return isValid;
 }
 // ===
-
-// & === DECORATORS
-const autobind = (
-	target : any,
-	methodName: string,
-	descriptor: PropertyDescriptor
-	) => {
-		const originalMethod = descriptor.value;
-		const adjDescriptor: PropertyDescriptor = {
-			configurable: true,
-			get() {
-				const boundFunction = originalMethod.bind(this);
-				return boundFunction;
-			}
-		};
-		return adjDescriptor;
-	}
 
  // === PROJECT_INPUT
 class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
@@ -237,8 +286,9 @@ class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
 		this.peopleInputElement.value = '';
 	}
 
-	@autobind
-	private submitHandler(event: Event) {
+	// use decorators ONLY while using function() instead () => {}
+	// @autobind
+	private submitHandler = (event: Event) => {
 		event.preventDefault();
 		const userInput = this.gatherUserInput();
 		if (Array.isArray(userInput)) {
@@ -251,7 +301,9 @@ class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
 }
 
 // === PROJECT LIST
-class ProjectList extends Component<HTMLDivElement, HTMLElement> {
+class ProjectList 
+	extends Component<HTMLDivElement, HTMLElement>
+	implements DragTarget {
 	public assignedProjects: Project[];
 
 	constructor(private projectType: ProjectStatus) {
@@ -267,10 +319,35 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
 		listEl.innerHTML = '';
 		this.assignedProjects.forEach(projectItem => {
 			new ProjectItem(this.element.querySelector('ul')!.id, projectItem);
-		})
+		});
+	}
+
+	dragOverHandler = (event: DragEvent) => {
+		const listEl = this.element.querySelector('ul')!;
+		listEl.classList.add('droppable');
+		if (event.dataTransfer && event.dataTransfer.types[0] === 'text/plain') {
+			event.preventDefault();
+		}
+	}
+
+	dragLeaveHandler = (_: DragEvent) => {
+		const listEl = this.element.querySelector('ul')!;
+		listEl.classList.remove('droppable');
+	}
+
+	dropHandler = (event: DragEvent) => {
+		const projectId = event.dataTransfer!.getData('text/plain');
+		projectState.moveProject(projectId, this.projectType === 'active' ? ProjectStatus.ACTIVE : ProjectStatus.FINISHED);
+		
+		const listEl = this.element.querySelector('ul')!;
+		listEl.classList.remove('droppable');
 	}
 
 	public configure() {
+		this.element.addEventListener('dragover', this.dragOverHandler);
+		this.element.addEventListener('dragleave', this.dragLeaveHandler);
+		this.element.addEventListener('drop', this.dropHandler);
+
 		projectState.addListener((projects: Project[]) => {
 			const relevantProjects = projects.filter(project => {
 				return project.status === (
