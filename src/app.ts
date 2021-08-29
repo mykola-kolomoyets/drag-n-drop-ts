@@ -1,4 +1,4 @@
-// === CUSTOM TYPES
+// & === CUSTOM TYPES
 enum ProjectStatus {
 	ACTIVE = 'active',
 	FINISHED = 'finished'
@@ -6,7 +6,7 @@ enum ProjectStatus {
 
 type Listener<T> = (items: T[]) => void;
 
-// === CUSTOM CLASSES
+// & === CUSTOM CLASSES
 class Project {
 	constructor(
 		public id: string,
@@ -48,7 +48,26 @@ abstract class Component<T extends HTMLElement, U extends HTMLElement> {
 	abstract renderContent(): void;
 }
 
-// === BLL
+class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
+	constructor(
+		hostId: string,
+		private project: Project
+	) {
+		super('single-project', hostId, false, project.id);
+		this.configure();
+		this.renderContent();
+	}
+
+	configure() {}
+
+	renderContent() {
+		const { title, description, people } = this.project;
+		this.element.querySelector('h2')!.textContent = title;
+		this.element.querySelector('h3')!.textContent = people.toString();
+		this.element.querySelector('p')!.textContent = description;
+	}
+}
+// & === BLL
 
 class State<T> {
 	protected listeners: Listener<T>[] = [];
@@ -92,7 +111,7 @@ class ProjectState extends State<Project>{
 
 const projectState = ProjectState.getInstance();
 
-// === VALIDATION
+// & === VALIDATION
 interface Validatable {
 	value: number | string;
 	required: boolean;
@@ -136,7 +155,7 @@ const validate = ({
 }
 // ===
 
-// === AUTOBIND decoratar
+// & === DECORATORS
 const autobind = (
 	target : any,
 	methodName: string,
@@ -247,10 +266,7 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
 		const listEl = document.getElementById(`${this.projectType}-projects-list`) as HTMLUListElement;
 		listEl.innerHTML = '';
 		this.assignedProjects.forEach(projectItem => {
-			const listItem = document.createElement('li');
-			listItem.textContent = projectItem.title;
-
-			listEl.appendChild(listItem);
+			new ProjectItem(this.element.querySelector('ul')!.id, projectItem);
 		})
 	}
 

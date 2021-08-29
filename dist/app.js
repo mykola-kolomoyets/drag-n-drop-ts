@@ -49,6 +49,24 @@ var Component = (function () {
     };
     return Component;
 }());
+var ProjectItem = (function (_super) {
+    __extends(ProjectItem, _super);
+    function ProjectItem(hostId, project) {
+        var _this = _super.call(this, 'single-project', hostId, false, project.id) || this;
+        _this.project = project;
+        _this.configure();
+        _this.renderContent();
+        return _this;
+    }
+    ProjectItem.prototype.configure = function () { };
+    ProjectItem.prototype.renderContent = function () {
+        var _a = this.project, title = _a.title, description = _a.description, people = _a.people;
+        this.element.querySelector('h2').textContent = title;
+        this.element.querySelector('h3').textContent = people.toString();
+        this.element.querySelector('p').textContent = description;
+    };
+    return ProjectItem;
+}(Component));
 var State = (function () {
     function State() {
         this.listeners = [];
@@ -184,12 +202,11 @@ var ProjectList = (function (_super) {
         return _this;
     }
     ProjectList.prototype.renderProjects = function () {
+        var _this = this;
         var listEl = document.getElementById(this.projectType + "-projects-list");
         listEl.innerHTML = '';
         this.assignedProjects.forEach(function (projectItem) {
-            var listItem = document.createElement('li');
-            listItem.textContent = projectItem.title;
-            listEl.appendChild(listItem);
+            new ProjectItem(_this.element.querySelector('ul').id, projectItem);
         });
     };
     ProjectList.prototype.configure = function () {
